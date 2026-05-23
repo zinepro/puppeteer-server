@@ -4,7 +4,7 @@ const INSTAGRAM_HASHTAG = "https://www.instagram.com/explore/search/keyword/?q=%
 async function scrapeHandler(page, scrollCount = 10) {
   const collectedLinks = new Set();
 
-  await page.waitForSelector("a[href*='/p/']", { timeout: 15000 });
+  await page.waitForSelector("a[href*='/p/']", { timeout: 60000 });
 
   for (let i = 0; i < scrollCount; i++) {
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
@@ -31,8 +31,7 @@ async function discoverLinks(page, keywordsObj) {
     console.log(`Scraping keyword: ${keyword} (${scrollCount} scrolls)`);
     const url = INSTAGRAM_HASHTAG + keyword;
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
-    await new Promise((r) => setTimeout(r, 2000));
-
+    await new Promise((r) => setTimeout(r, 5000));
     const links = await scrapeHandler(page, scrollCount);
     console.log(`${links.length} liens trouvés pour "${keyword}"`);
     allLinks.push(...links);
