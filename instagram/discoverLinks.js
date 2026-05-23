@@ -32,6 +32,8 @@ async function discoverLinks(page, keywordsObj) {
     const url = INSTAGRAM_HASHTAG + keyword;
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
     await new Promise((r) => setTimeout(r, 5000));
+    console.log("URL après goto:", page.url());
+    console.log("Titre page:", await page.title());
     const links = await scrapeHandler(page, scrollCount);
     console.log(`${links.length} liens trouvés pour "${keyword}"`);
     allLinks.push(...links);
