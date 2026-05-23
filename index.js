@@ -4,6 +4,7 @@ const { getBrowser } = require("./browser");
 const { restoreSession } = require("./session");
 const { loginInstagram, isLoggedIn } = require("./instagram/auth");
 const { postComment } = require("./instagram/comment");
+const { discoverLinks } = require("./instagram/discoverLinks");
 
 const app = express();
 app.use(express.json());
@@ -77,6 +78,34 @@ app.post("/run", async (req, res) => {
     const title = await page.title();
     await browser.close();
     res.json({ success: true, title });
+  } catch (err) {
+    await browser.close();
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post("/discoverLinks", async (req, res) => {
+  const { keywords } = req.body;
+
+  if (!keywords || typeof keywords !== "object") {
+    return res.status(400).json({ error: "keywords est requis (objet)" });
+  }
+
+  const browser = await getBrowser();
+  const page = await browser.newPage();
+
+  try {
+    const sessionRestored = await restoreSession(page);
+    const loggedIn = await isLoggedIn(page);
+
+    if (!loggedIn) {
+      await page.goto("https://www.instagram.com/", { waitUntil: "networkidle2" });
+      await loginInstagram(page);
+    }
+
+    const links = await discoverLinks(page, keywords);
+    await browser.close();
+    res.json({ success: true, links });
   } catch (err) {
     await browser.close();
     res.status(500).json({ success: false, error: err.message });

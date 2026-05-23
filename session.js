@@ -1,7 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 
-const SESSION_PATH = path.join(__dirname, "ig-session.json");
+const SESSION_PATH =
+  process.env.NODE_ENV === "production" ? "/tmp/ig-session.json" : path.join(__dirname, "ig-session.json");
 
 async function restoreSession(page) {
   if (!fs.existsSync(SESSION_PATH)) return false;
