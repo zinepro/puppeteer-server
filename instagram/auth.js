@@ -13,7 +13,7 @@ async function loginInstagram(page) {
   await page.type('input[name="email"]', IG_EMAIL, { delay: 50 });
   await page.type('input[name="pass"]', IG_PASSWORD, { delay: 50 });
 
-  await page.click('div[aria-label="Se connecter"]');
+  await page.click('div[aria-label="Log in"], div[aria-label="Se connecter"]');
   await new Promise((r) => setTimeout(r, 3000));
 
   try {
