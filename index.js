@@ -1,36 +1,82 @@
-const express = require('express');
-const puppeteer = require('puppeteer');
+require("dotenv").config();
+const express = require("express");
+const { getBrowser } = require("./browser");
+const { restoreSession } = require("./session");
+const { loginInstagram, isLoggedIn } = require("./instagram/auth");
+const { postComment } = require("./instagram/comment");
+
 const app = express();
 app.use(express.json());
 
-const API_KEY = process.env.API_KEY || 'dev-key';
+const API_KEY = process.env.API_KEY || "dev-key";
 
 // Middleware sécurité
 app.use((req, res, next) => {
-  if (req.headers['x-api-key'] !== API_KEY) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  if (req.headers["x-api-key"] !== API_KEY) {
+    return res.status(401).json({ error: "Unauthorized" });
   }
   next();
 });
 
-app.post('/run', async (req, res) => {
-  const { url } = req.body;
+// Route : login et sauvegarde de session
+app.post("/login", async (req, res) => {
+  const browser = await getBrowser();
+  const page = await browser.newPage();
+  try {
+    await page.goto("https://www.instagram.com/", { waitUntil: "networkidle2" });
+    await loginInstagram(page);
+    await browser.close();
+    res.json({ success: true, message: "Connecté et session sauvegardée !" });
+  } catch (err) {
+    await browser.close();
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
-  if (!url) return res.status(400).json({ error: 'url manquante' });
+// Route : poster un commentaire
+app.post("/comment", async (req, res) => {
+  const { url, comment } = req.body;
 
-  const browser = await puppeteer.launch({
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    headless: true
-  });
+  if (!url || !comment) {
+    return res.status(400).json({ error: "url et comment sont requis" });
+  }
 
+  const browser = await getBrowser();
   const page = await browser.newPage();
 
   try {
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+    const sessionRestored = await restoreSession(page);
+
+    const loggedIn = await isLoggedIn(page);
+
+    if (!loggedIn) {
+      await page.goto("https://www.instagram.com/", { waitUntil: "networkidle2" });
+      await loginInstagram(page);
+    }
+
+    await postComment(page, url, comment);
+
+    await browser.close();
+    res.json({ success: true, message: "Commentaire posté !" });
+  } catch (err) {
+    await browser.close();
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Route de base (test)
+app.post("/run", async (req, res) => {
+  const { url } = req.body;
+  if (!url) return res.status(400).json({ error: "url manquante" });
+
+  const browser = await getBrowser();
+  const page = await browser.newPage();
+
+  try {
+    await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
     const title = await page.title();
     await browser.close();
     res.json({ success: true, title });
-
   } catch (err) {
     await browser.close();
     res.status(500).json({ success: false, error: err.message });
@@ -38,5 +84,5 @@ app.post('/run', async (req, res) => {
 });
 
 app.listen(process.env.PORT || 3000, () => {
-  console.log('Serveur Puppeteer démarré sur le port ' + (process.env.PORT || 3000));
+  console.log("Serveur Puppeteer démarré sur le port " + (process.env.PORT || 3000));
 });
