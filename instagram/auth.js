@@ -25,11 +25,19 @@ async function loginInstagram(page) {
   await new Promise((r) => setTimeout(r, 3000));
 
   try {
-    await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 15000 });
+    await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 60000 });
   } catch (e) {
     console.log("Erreur navigation:", e.message);
   }
 
+  await new Promise((r) => setTimeout(r, 5000));
+
+  const allCookies = await page.cookies();
+  console.log(
+    "Cookies après login:",
+    allCookies.map((c) => c.name),
+  );
+  console.log("URL après login:", page.url());
   await saveSession(page);
 }
 
