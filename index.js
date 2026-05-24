@@ -12,6 +12,10 @@ const SESSION_PATH = path.join("/tmp", "ig-session.json");
 
 const app = express();
 app.use(express.json());
+app.use((req, res, next) => {
+  res.setTimeout(300000); // 5 minutes
+  next();
+});
 
 const API_KEY = process.env.API_KEY || "dev-key";
 
