@@ -1,6 +1,5 @@
 const { saveSession } = require("../session");
 
-const IG_USERNAME = process.env.IG_USERNAME;
 const IG_EMAIL = process.env.IG_EMAIL;
 const IG_PASSWORD = process.env.IG_PASSWORD;
 
@@ -35,13 +34,10 @@ async function loginInstagram(page) {
 }
 
 async function isLoggedIn(page) {
-  await page.goto("https://www.instagram.com/", { waitUntil: "domcontentloaded", timeout: 60000 });
-  await new Promise((r) => setTimeout(r, 3000));
-
-  const profileLink = await page.$(`a[href="/${IG_USERNAME}/"]`);
-  console.log("Profile link trouvé:", profileLink ? "OUI" : "NON");
-
-  return !!profileLink;
+  const cookies = await page.cookies("https://www.instagram.com");
+  const sessionCookie = cookies.find((c) => c.name === "sessionid");
+  console.log("Cookie sessionid trouvé:", sessionCookie ? "OUI" : "NON");
+  return !!sessionCookie;
 }
 
 module.exports = { loginInstagram, isLoggedIn };
