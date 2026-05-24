@@ -56,6 +56,15 @@ async function scrapePosts(page, shortcodes) {
     } catch (navError) {
       console.warn(`Erreur navigation ${shortcode}:`, navError.message);
       failed.push(shortcode);
+
+      // Vérifier si la page est encore utilisable
+      try {
+        await page.evaluate(() => true);
+      } catch (e) {
+        console.log("Page détachée, on arrête le scraping");
+        break;
+      }
+
       continue;
     }
 
