@@ -120,6 +120,13 @@ app.post("/discoverLinks", async (req, res) => {
   }
 });
 
+app.post("/uploadSession", async (req, res) => {
+  const { cookies } = req.body;
+  if (!cookies) return res.status(400).json({ error: "cookies requis" });
+  fs.writeFileSync(SESSION_PATH, JSON.stringify(cookies));
+  res.json({ success: true, message: "Session uploadée !" });
+});
+
 app.listen(process.env.PORT || 3000, () => {
   console.log("Serveur Puppeteer démarré sur le port " + (process.env.PORT || 3000));
 });
