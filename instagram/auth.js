@@ -35,6 +35,10 @@ async function loginInstagram(page) {
 
 async function isLoggedIn(page) {
   const cookies = await page.cookies("https://www.instagram.com");
+  console.log(
+    "Cookies actifs:",
+    cookies.map((c) => c.name),
+  );
   const sessionCookie = cookies.find((c) => c.name === "sessionid");
   console.log("Cookie sessionid trouvé:", sessionCookie ? "OUI" : "NON");
   return !!sessionCookie;
