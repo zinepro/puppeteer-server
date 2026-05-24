@@ -5,6 +5,10 @@ const { restoreSession } = require("./session");
 const { loginInstagram, isLoggedIn } = require("./instagram/auth");
 const { postComment } = require("./instagram/comment");
 const { discoverLinks } = require("./instagram/discoverLinks");
+const fs = require("fs");
+const path = require("path");
+
+const SESSION_PATH = path.join("/tmp", "ig-session.json");
 
 const app = express();
 app.use(express.json());
