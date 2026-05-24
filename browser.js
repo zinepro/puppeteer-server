@@ -4,7 +4,16 @@ puppeteer.use(StealthPlugin());
 
 async function getBrowser() {
   return await puppeteer.launch({
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--window-size=1280,800"],
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--no-first-run",
+      "--no-zygote",
+      "--single-process",
+      "--disable-extensions",
+    ],
     headless: "new",
   });
 }
