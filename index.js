@@ -1,12 +1,13 @@
 require("dotenv").config();
 const express = require("express");
+const fs = require("fs");
+const path = require("path");
 const { getBrowser } = require("./browser");
 const { restoreSession } = require("./session");
 const { loginInstagram, isLoggedIn } = require("./instagram/auth");
 const { postComment } = require("./instagram/comment");
 const { discoverLinks } = require("./instagram/discoverLinks");
-const fs = require("fs");
-const path = require("path");
+const { scrapePosts } = require("./instagram/scrapePosts");
 
 const SESSION_PATH = path.join("/tmp", "ig-session.json");
 
@@ -133,6 +134,37 @@ app.post("/uploadSession", async (req, res) => {
   if (!cookies) return res.status(400).json({ error: "cookies requis" });
   fs.writeFileSync(SESSION_PATH, JSON.stringify(cookies));
   res.json({ success: true, message: "Session uploadée !" });
+});
+
+app.post("/scrapePosts", async (req, res) => {
+  const { shortcodes } = req.body;
+
+  if (!shortcodes || !Array.isArray(shortcodes)) {
+    return res.status(400).json({ error: "shortcodes est requis (array)" });
+  }
+
+  const browser = await getBrowser();
+  const page = await browser.newPage();
+
+  try {
+    const sessionRestored = await restoreSession(page);
+    console.log("Session restaurée:", sessionRestored);
+
+    const loggedIn = await isLoggedIn(page);
+    console.log("Est connecté:", loggedIn);
+
+    if (!loggedIn) {
+      await page.goto("https://www.instagram.com/", { waitUntil: "domcontentloaded" });
+      await loginInstagram(page);
+    }
+
+    const { results, failed } = await scrapePosts(page, shortcodes);
+    await browser.close();
+    res.json({ success: true, results, failed });
+  } catch (err) {
+    await browser.close();
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 app.listen(process.env.PORT || 3000, () => {
