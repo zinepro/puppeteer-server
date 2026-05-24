@@ -100,14 +100,18 @@ app.post("/discoverLinks", async (req, res) => {
 
   try {
     const sessionRestored = await restoreSession(page);
+    console.log("Session restaurée:", sessionRestored);
     const loggedIn = await isLoggedIn(page);
+    console.log("Est connecté:", loggedIn);
 
     if (!loggedIn) {
       await page.goto("https://www.instagram.com/", { waitUntil: "networkidle2" });
       await loginInstagram(page);
     }
 
+    console.log("go sur page de découverte");
     const links = await discoverLinks(page, keywords);
+    console.log("Liens découverts:", links);
     await browser.close();
     res.json({ success: true, links });
   } catch (err) {
