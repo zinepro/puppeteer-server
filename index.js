@@ -93,6 +93,10 @@ app.post("/discoverLinks", async (req, res) => {
 
   const browser = await getBrowser();
   const page = await browser.newPage();
+  await page.setUserAgent(
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  );
+  await page.setExtraHTTPHeaders({ "Accept-Language": "fr-FR,fr;q=0.9" });
 
   try {
     const sessionRestored = await restoreSession(page);
