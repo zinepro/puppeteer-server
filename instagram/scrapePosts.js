@@ -53,6 +53,8 @@ async function scrapePosts(page, shortcodes) {
     try {
       await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
       await new Promise((r) => setTimeout(r, 2000));
+      console.log('Titre page:', await page.title());
+      console.log('URL:', page.url());
     } catch (navError) {
       console.warn(`Erreur navigation ${shortcode}:`, navError.message);
       failed.push(shortcode);
