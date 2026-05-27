@@ -167,6 +167,34 @@ app.post("/scrapePosts", async (req, res) => {
   }
 });
 
+app.post("/refreshSession", async (req, res) => {
+  const browser = await getBrowser();
+  const page = await browser.newPage();
+
+  try {
+    const sessionRestored = await restoreSession(page);
+    console.log("Session restaurée:", sessionRestored);
+
+    await page.goto("https://www.instagram.com/", { waitUntil: "domcontentloaded", timeout: 60000 });
+    await new Promise((r) => setTimeout(r, 3000));
+
+    const cookies = await page.cookies();
+    console.log(
+      "Cookies rafraîchis:",
+      cookies.map((c) => c.name),
+    );
+
+    fs.writeFileSync(SESSION_PATH, JSON.stringify(cookies));
+    console.log("Session sauvegardée.");
+
+    await browser.close();
+    res.json({ success: true, message: "Session rafraîchie !" });
+  } catch (err) {
+    await browser.close();
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.listen(process.env.PORT || 3000, () => {
   console.log("Serveur Puppeteer démarré sur le port " + (process.env.PORT || 3000));
 });
