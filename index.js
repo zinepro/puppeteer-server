@@ -5,7 +5,7 @@ const path = require("path");
 const { getBrowser } = require("./browser");
 const { restoreSession } = require("./session");
 const { loginInstagram, isLoggedIn } = require("./instagram/auth");
-const { postComment } = require("./instagram/comment");
+const { postComments } = require("./instagram/comment");
 const { discoverLinks } = require("./instagram/discoverLinks");
 const { scrapePosts } = require("./instagram/scrapePosts");
 
@@ -44,8 +44,37 @@ app.post("/login", async (req, res) => {
 });
 
 // Route : poster un commentaire
+// app.post("/comment", async (req, res) => {
+//   const { url, comment } = req.body;
+
+//   if (!url || !comment) {
+//     return res.status(400).json({ error: "url et comment sont requis" });
+//   }
+
+//   const browser = await getBrowser();
+//   const page = await browser.newPage();
+
+//   try {
+//     const sessionRestored = await restoreSession(page);
+
+//     const loggedIn = await isLoggedIn(page);
+
+//     if (!loggedIn) {
+//       await page.goto("https://www.instagram.com/", { waitUntil: "networkidle2" });
+//       await loginInstagram(page);
+//     }
+
+//     await postComment(page, url, comment);
+
+//     await browser.close();
+//     res.json({ success: true, message: "Commentaire posté !" });
+//   } catch (err) {
+//     await browser.close();
+//     res.status(500).json({ success: false, error: err.message });
+//   }
+// });
 app.post("/comment", async (req, res) => {
-  const { url, comment } = req.body;
+  const { url, comment, count = 1 } = req.body;
 
   if (!url || !comment) {
     return res.status(400).json({ error: "url et comment sont requis" });
@@ -56,7 +85,6 @@ app.post("/comment", async (req, res) => {
 
   try {
     const sessionRestored = await restoreSession(page);
-
     const loggedIn = await isLoggedIn(page);
 
     if (!loggedIn) {
@@ -64,10 +92,10 @@ app.post("/comment", async (req, res) => {
       await loginInstagram(page);
     }
 
-    await postComment(page, url, comment);
+    await postComments(page, url, comment, count);
 
     await browser.close();
-    res.json({ success: true, message: "Commentaire posté !" });
+    res.json({ success: true, message: `${count} commentaire(s) posté(s) !` });
   } catch (err) {
     await browser.close();
     res.status(500).json({ success: false, error: err.message });
