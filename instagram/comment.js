@@ -3,8 +3,19 @@ async function postComments(page, url, comment, count) {
   await new Promise((r) => setTimeout(r, 3000));
 
   for (let i = 0; i < count; i++) {
-    await page.waitForNetworkIdle({ timeout: 30000 });
-    await page.waitForSelector("textarea[placeholder]", { timeout: 60000 });
+    // await page.waitForSelector("textarea[placeholder]", { timeout: 60000 });
+    await new Promise((r) => setTimeout(r, 5000));
+
+    const textareas = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll("textarea")).map((t) => ({
+        placeholder: t.getAttribute("placeholder"),
+        ariaLabel: t.getAttribute("aria-label"),
+        visible: t.offsetParent !== null,
+      }));
+    });
+
+    console.log("Textareas trouvées:", JSON.stringify(textareas));
+
     await page.click("textarea[placeholder]");
     await new Promise((r) => setTimeout(r, 500));
     await page.type("textarea[placeholder]", comment, { delay: 50 });
