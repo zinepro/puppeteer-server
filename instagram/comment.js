@@ -3,21 +3,7 @@ async function postComments(page, url, comment, count) {
   await new Promise((r) => setTimeout(r, 3000));
 
   for (let i = 0; i < count; i++) {
-    // await page.waitForSelector("textarea[placeholder]", { timeout: 60000 });
-    await new Promise((r) => setTimeout(r, 5000));
-
-    const debug = await page.evaluate(() => {
-      return {
-        url: window.location.href,
-        title: document.title,
-        bodyLength: document.body.innerHTML.length,
-        hasLoginForm: !!document.querySelector('input[name="username"]'),
-        hasPost: !!document.querySelector("article"),
-      };
-    });
-
-    console.log("Debug page:", JSON.stringify(debug));
-
+    await page.waitForSelector("textarea[placeholder]", { timeout: 10000 });
     await page.click("textarea[placeholder]");
     await new Promise((r) => setTimeout(r, 500));
     await page.type("textarea[placeholder]", comment, { delay: 50 });
