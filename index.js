@@ -3,7 +3,7 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const { getBrowser } = require("./browser");
-const { restoreSession } = require("./session");
+const { restoreSession, saveSession } = require("./session");
 const { loginInstagram, isLoggedIn } = require("./instagram/auth");
 const { postComments } = require("./instagram/comment");
 const { discoverLinks } = require("./instagram/discoverLinks");
@@ -14,13 +14,12 @@ const SESSION_PATH = path.join("/tmp", "ig-session.json");
 const app = express();
 app.use(express.json());
 app.use((req, res, next) => {
-  res.setTimeout(300000); // 5 minutes
+  res.setTimeout(300000);
   next();
 });
 
 const API_KEY = process.env.API_KEY || "dev-key";
 
-// Middleware sécurité
 app.use((req, res, next) => {
   if (req.headers["x-api-key"] !== API_KEY) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -28,13 +27,23 @@ app.use((req, res, next) => {
   next();
 });
 
-// Route : login et sauvegarde de session
+// ── State global pour la vérification en attente
+let pendingVerificationPage = null;
+
+// Route : login
 app.post("/login", async (req, res) => {
   const browser = await getBrowser();
   const page = await browser.newPage();
   try {
     await page.goto("https://www.instagram.com/", { waitUntil: "networkidle2" });
     await loginInstagram(page);
+
+    const currentUrl = page.url();
+    if (currentUrl.includes("challenge") || currentUrl.includes("verify") || currentUrl.includes("checkpoint")) {
+      pendingVerificationPage = page; // Garder la page en vie
+      return res.json({ success: false, message: "Vérification requise — entre le code via /verify" });
+    }
+
     await browser.close();
     res.json({ success: true, message: "Connecté et session sauvegardée !" });
   } catch (err) {
@@ -43,36 +52,40 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// Route : poster un commentaire
-// app.post("/comment", async (req, res) => {
-//   const { url, comment } = req.body;
+// Route : verify (code email Instagram)
+app.post("/verify", async (req, res) => {
+  const { code } = req.body;
 
-//   if (!url || !comment) {
-//     return res.status(400).json({ error: "url et comment sont requis" });
-//   }
+  if (!pendingVerificationPage) {
+    return res.status(400).json({ error: "Pas de vérification en attente — appelle /login d'abord" });
+  }
 
-//   const browser = await getBrowser();
-//   const page = await browser.newPage();
+  try {
+    // Cherche le champ de saisie du code
+    await pendingVerificationPage.waitForSelector(
+      'input[name="email_confirmation_code"], input[placeholder*="code"], input[aria-label*="code"], input[type="number"]',
+      { timeout: 10000 },
+    );
+    await pendingVerificationPage.type(
+      'input[name="email_confirmation_code"], input[placeholder*="code"], input[aria-label*="code"], input[type="number"]',
+      code,
+      { delay: 50 },
+    );
+    await pendingVerificationPage.keyboard.press("Enter");
+    await new Promise((r) => setTimeout(r, 5000));
 
-//   try {
-//     const sessionRestored = await restoreSession(page);
+    await saveSession(pendingVerificationPage);
 
-//     const loggedIn = await isLoggedIn(page);
+    await pendingVerificationPage.browser().close();
+    pendingVerificationPage = null;
 
-//     if (!loggedIn) {
-//       await page.goto("https://www.instagram.com/", { waitUntil: "networkidle2" });
-//       await loginInstagram(page);
-//     }
+    res.json({ success: true, message: "Code validé, session sauvegardée !" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
-//     await postComment(page, url, comment);
-
-//     await browser.close();
-//     res.json({ success: true, message: "Commentaire posté !" });
-//   } catch (err) {
-//     await browser.close();
-//     res.status(500).json({ success: false, error: err.message });
-//   }
-// });
+// Route : poster des commentaires
 app.post("/comment", async (req, res) => {
   const { url, comment, count = 1 } = req.body;
 
@@ -146,9 +159,7 @@ app.post("/discoverLinks", async (req, res) => {
       await loginInstagram(page);
     }
 
-    console.log("go sur page de découverte");
     const links = await discoverLinks(page, keywords);
-    console.log("Liens découverts:", links);
     await browser.close();
     res.json({ success: true, links });
   } catch (err) {
@@ -176,10 +187,7 @@ app.post("/scrapePosts", async (req, res) => {
 
   try {
     const sessionRestored = await restoreSession(page);
-    console.log("Session restaurée:", sessionRestored);
-
     const loggedIn = await isLoggedIn(page);
-    console.log("Est connecté:", loggedIn);
 
     if (!loggedIn) {
       await page.goto("https://www.instagram.com/", { waitUntil: "domcontentloaded" });
@@ -217,32 +225,6 @@ app.post("/refreshSession", async (req, res) => {
 
     await browser.close();
     res.json({ success: true, message: "Session rafraîchie !" });
-  } catch (err) {
-    await browser.close();
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-app.post("/verify", async (req, res) => {
-  const { code } = req.body;
-  const browser = await getBrowser();
-  const page = await browser.newPage();
-
-  try {
-    await restoreSession(page);
-    await page.goto("https://www.instagram.com/", { waitUntil: "domcontentloaded" });
-
-    await page.waitForSelector(
-      'input[name="email_confirmation_code"], input[placeholder*="code"], input[aria-label*="code"]',
-      { timeout: 10000 },
-    );
-    await page.type('input[name="email_confirmation_code"], input[placeholder*="code"]', code, { delay: 50 });
-    await page.click('button[type="submit"], div[role="button"]');
-    await new Promise((r) => setTimeout(r, 3000));
-    await saveSession(page);
-
-    await browser.close();
-    res.json({ success: true });
   } catch (err) {
     await browser.close();
     res.status(500).json({ success: false, error: err.message });

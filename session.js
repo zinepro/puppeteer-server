@@ -17,7 +17,7 @@ async function restoreSession(page) {
   return true;
 }
 
-async function saveSession(page) {
+export async function saveSession(page) {
   const cookies = await page.cookies();
   fs.writeFileSync(SESSION_PATH, JSON.stringify(cookies));
 }
