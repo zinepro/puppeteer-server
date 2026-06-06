@@ -1,4 +1,4 @@
-export async function postComments(page, url, comment, count) {
+async function postComments(page, url, comment, count) {
   await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
   await new Promise((r) => setTimeout(r, 2000));
 
@@ -15,3 +15,5 @@ export async function postComments(page, url, comment, count) {
     }
   }
 }
+
+module.exports = { postComments };
