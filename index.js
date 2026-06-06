@@ -223,6 +223,32 @@ app.post("/refreshSession", async (req, res) => {
   }
 });
 
+app.post("/verify", async (req, res) => {
+  const { code } = req.body;
+  const browser = await getBrowser();
+  const page = await browser.newPage();
+
+  try {
+    await restoreSession(page);
+    await page.goto("https://www.instagram.com/", { waitUntil: "domcontentloaded" });
+
+    await page.waitForSelector(
+      'input[name="email_confirmation_code"], input[placeholder*="code"], input[aria-label*="code"]',
+      { timeout: 10000 },
+    );
+    await page.type('input[name="email_confirmation_code"], input[placeholder*="code"]', code, { delay: 50 });
+    await page.click('button[type="submit"], div[role="button"]');
+    await new Promise((r) => setTimeout(r, 3000));
+    await saveSession(page);
+
+    await browser.close();
+    res.json({ success: true });
+  } catch (err) {
+    await browser.close();
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.listen(process.env.PORT || 3000, () => {
   console.log("Serveur Puppeteer démarré sur le port " + (process.env.PORT || 3000));
 });
