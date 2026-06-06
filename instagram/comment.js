@@ -6,22 +6,17 @@ async function postComments(page, url, comment, count) {
     // await page.waitForSelector("textarea[placeholder]", { timeout: 60000 });
     await new Promise((r) => setTimeout(r, 5000));
 
-    const clickables = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll("*"))
-        .filter((el) => {
-          const text = el.textContent.trim();
-          return (text === "Ajouter un commentaire…" || text === "Add a comment…") && el.children.length === 0;
-        })
-        .map((el) => ({
-          tag: el.tagName,
-          placeholder: el.getAttribute("placeholder"),
-          ariaLabel: el.getAttribute("aria-label"),
-          role: el.getAttribute("role"),
-          class: el.className,
-        }));
+    const debug = await page.evaluate(() => {
+      return {
+        url: window.location.href,
+        title: document.title,
+        bodyLength: document.body.innerHTML.length,
+        hasLoginForm: !!document.querySelector('input[name="username"]'),
+        hasPost: !!document.querySelector("article"),
+      };
     });
 
-    console.log("Clickables:", JSON.stringify(clickables));
+    console.log("Debug page:", JSON.stringify(debug));
 
     await page.click("textarea[placeholder]");
     await new Promise((r) => setTimeout(r, 500));
