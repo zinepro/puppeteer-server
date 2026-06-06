@@ -97,16 +97,8 @@ app.post("/comment", async (req, res) => {
   const page = await browser.newPage();
 
   try {
-    const sessionRestored = await restoreSession(page);
-    const loggedIn = await isLoggedIn(page);
-
-    if (!loggedIn) {
-      await page.goto("https://www.instagram.com/", { waitUntil: "networkidle2" });
-      await loginInstagram(page);
-    }
-
+    await restoreSession(page);
     await postComments(page, url, comment, count);
-
     await browser.close();
     res.json({ success: true, message: `${count} commentaire(s) posté(s) !` });
   } catch (err) {

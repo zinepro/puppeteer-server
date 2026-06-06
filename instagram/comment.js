@@ -12,7 +12,13 @@ async function postComments(page, url, comment, count) {
     console.log("Texte tapé");
     await page.keyboard.press("Enter");
     console.log("Enter pressé");
-    await new Promise((r) => setTimeout(r, 3000));
+    await new Promise((r) => setTimeout(r, 5000));
+    console.log("Pause terminée, URL:", page.url());
+
+    if (i < count - 1) {
+      const pause = Math.floor(Math.random() * 20000) + 10000;
+      await new Promise((r) => setTimeout(r, pause));
+    }
   }
 }
 
