@@ -6,15 +6,22 @@ async function postComments(page, url, comment, count) {
     // await page.waitForSelector("textarea[placeholder]", { timeout: 60000 });
     await new Promise((r) => setTimeout(r, 5000));
 
-    const textareas = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll("textarea")).map((t) => ({
-        placeholder: t.getAttribute("placeholder"),
-        ariaLabel: t.getAttribute("aria-label"),
-        visible: t.offsetParent !== null,
-      }));
+    const clickables = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll("*"))
+        .filter((el) => {
+          const text = el.textContent.trim();
+          return (text === "Ajouter un commentaire…" || text === "Add a comment…") && el.children.length === 0;
+        })
+        .map((el) => ({
+          tag: el.tagName,
+          placeholder: el.getAttribute("placeholder"),
+          ariaLabel: el.getAttribute("aria-label"),
+          role: el.getAttribute("role"),
+          class: el.className,
+        }));
     });
 
-    console.log("Textareas trouvées:", JSON.stringify(textareas));
+    console.log("Clickables:", JSON.stringify(clickables));
 
     await page.click("textarea[placeholder]");
     await new Promise((r) => setTimeout(r, 500));
