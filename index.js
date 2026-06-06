@@ -102,6 +102,7 @@ app.post("/comment", async (req, res) => {
     await browser.close();
     res.json({ success: true, message: `${count} commentaire(s) posté(s) !` });
   } catch (err) {
+    console.error("❌ Erreur postComments:", err.message);
     await browser.close();
     res.status(500).json({ success: false, error: err.message });
   }
